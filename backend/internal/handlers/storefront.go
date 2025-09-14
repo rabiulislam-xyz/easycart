@@ -77,7 +77,7 @@ func (h *StorefrontHandler) GetShopProducts(c echo.Context) error {
 	var products []models.Product
 	offset := (page - 1) * limit
 	
-	if err := query.Preload("Category").Preload("Media").Order("created_at DESC").Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+	if err := query.Preload("Category").Preload("Images").Order("created_at DESC").Offset(offset).Limit(limit).Find(&products).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
 	}
 
@@ -117,7 +117,7 @@ func (h *StorefrontHandler) GetShopProduct(c echo.Context) error {
 	}
 
 	var product models.Product
-	if err := h.db.Preload("Category").Preload("Media").Where("id = ? AND shop_id = ? AND is_active = true", id, shop.ID).First(&product).Error; err != nil {
+	if err := h.db.Preload("Category").Preload("Images").Where("id = ? AND shop_id = ? AND is_active = true", id, shop.ID).First(&product).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "Product not found"})
 		}
