@@ -1,0 +1,112 @@
+package models
+
+import (
+	"fmt"
+	"time"
+	"github.com/google/uuid"
+)
+
+type OrderStatus string
+
+const (
+	OrderStatusPending    OrderStatus = "pending"
+	OrderStatusProcessing OrderStatus = "processing"
+	OrderStatusShipped    OrderStatus = "shipped"
+	OrderStatusDelivered  OrderStatus = "delivered"
+	OrderStatusCancelled  OrderStatus = "cancelled"
+)
+
+type PaymentStatus string
+
+const (
+	PaymentStatusPending   PaymentStatus = "pending"
+	PaymentStatusPaid      PaymentStatus = "paid"
+	PaymentStatusFailed    PaymentStatus = "failed"
+	PaymentStatusRefunded  PaymentStatus = "refunded"
+)
+
+type Order struct {
+	ID              uuid.UUID     `json:"id" gorm:"type:uuid;primary_key"`
+	ShopID          uuid.UUID     `json:"shop_id" gorm:"type:uuid;not null;index"`
+	OrderNumber     string        `json:"order_number" gorm:"unique;not null"`
+	CustomerEmail   string        `json:"customer_email" gorm:"not null"`
+	CustomerName    string        `json:"customer_name" gorm:"not null"`
+	CustomerPhone   string        `json:"customer_phone"`
+	
+	// Shipping Address
+	ShippingAddress string `json:"shipping_address" gorm:"not null"`
+	ShippingCity    string `json:"shipping_city" gorm:"not null"`
+	ShippingState   string `json:"shipping_state"`
+	ShippingZip     string `json:"shipping_zip" gorm:"not null"`
+	ShippingCountry string `json:"shipping_country" gorm:"not null;default:'US'"`
+	
+	// Order totals (in cents)
+	Subtotal      int `json:"subtotal" gorm:"not null"`
+	TaxAmount     int `json:"tax_amount" gorm:"default:0"`
+	ShippingCost  int `json:"shipping_cost" gorm:"default:0"`
+	Total         int `json:"total" gorm:"not null"`
+	
+	// Status
+	Status        OrderStatus   `json:"status" gorm:"type:varchar(20);default:'pending'"`
+	PaymentStatus PaymentStatus `json:"payment_status" gorm:"type:varchar(20);default:'pending'"`
+	
+	// Metadata
+	Notes     string    `json:"notes"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	
+	// Relations
+	Shop      Shop        `json:"shop,omitempty" gorm:"foreignKey:ShopID"`
+	Items     []OrderItem `json:"items,omitempty" gorm:"foreignKey:OrderID"`
+}
+
+type OrderItem struct {
+	ID        uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
+	OrderID   uuid.UUID `json:"order_id" gorm:"type:uuid;not null;index"`
+	ProductID uuid.UUID `json:"product_id" gorm:"type:uuid;not null;index"`
+	
+	// Snapshot of product data at time of order
+	ProductName  string `json:"product_name" gorm:"not null"`
+	ProductSKU   string `json:"product_sku"`
+	ProductImage string `json:"product_image"`
+	
+	// Pricing (in cents)
+	UnitPrice int `json:"unit_price" gorm:"not null"`
+	Quantity  int `json:"quantity" gorm:"not null"`
+	Total     int `json:"total" gorm:"not null"`
+	
+	CreatedAt time.Time `json:"created_at"`
+	
+	// Relations
+	Order   Order   `json:"order,omitempty" gorm:"foreignKey:OrderID"`
+	Product Product `json:"product,omitempty" gorm:"foreignKey:ProductID"`
+}
+
+// BeforeCreate hook for Order
+func (o *Order) BeforeCreate() error {
+	if o.ID == uuid.Nil {
+		o.ID = uuid.New()
+	}
+	
+	// Generate order number if not set
+	if o.OrderNumber == "" {
+		o.OrderNumber = generateOrderNumber()
+	}
+	
+	return nil
+}
+
+// BeforeCreate hook for OrderItem
+func (oi *OrderItem) BeforeCreate() error {
+	if oi.ID == uuid.Nil {
+		oi.ID = uuid.New()
+	}
+	return nil
+}
+
+// Helper function to generate order number
+func generateOrderNumber() string {
+	// Simple order number generation - could be made more sophisticated
+	timestamp := time.Now().Unix()
+	return fmt.Sprintf("ORD-%d", timestamp)
+}

@@ -1,0 +1,71 @@
+{
+  "products": [
+    {
+      "id": "prod-1",
+      "name": "iPhone 15",
+      "description": "Latest iPhone with advanced features",
+      "price": 99900,
+      "compare_price": 109900,
+      "stock": 25,
+      "min_stock": 5,
+      "is_active": true,
+      "is_featured": true,
+      "category_id": "cat-1",
+      "category": {
+        "id": "cat-1",
+        "name": "Electronics"
+      },
+      "media": [
+        {
+          "id": "media-1",
+          "url": "https://example.com/iphone15.jpg",
+          "alt": "iPhone 15"
+        }
+      ]
+    },
+    {
+      "id": "prod-2", 
+      "name": "Samsung Galaxy S24",
+      "description": "Powerful Android smartphone",
+      "price": 79900,
+      "stock": 15,
+      "min_stock": 3,
+      "is_active": true,
+      "is_featured": false,
+      "category_id": "cat-1",
+      "category": {
+        "id": "cat-1", 
+        "name": "Electronics"
+      },
+      "media": [
+        {
+          "id": "media-2",
+          "url": "https://example.com/galaxy.jpg",
+          "alt": "Samsung Galaxy S24"
+        }
+      ]
+    },
+    {
+      "id": "prod-3",
+      "name": "AirPods Pro",
+      "description": "Wireless earbuds with noise cancellation",
+      "price": 24900,
+      "stock": 50,
+      "min_stock": 10,
+      "is_active": true,
+      "is_featured": false,
+      "category_id": "cat-2",
+      "category": {
+        "id": "cat-2",
+        "name": "Accessories"
+      },
+      "media": []
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 3,
+    "total_pages": 1
+  }
+}

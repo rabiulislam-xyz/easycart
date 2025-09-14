@@ -1,0 +1,22 @@
+{
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Electronics",
+      "description": "Electronic devices and gadgets",
+      "is_active": true
+    },
+    {
+      "id": "cat-2", 
+      "name": "Accessories",
+      "description": "Phone and tech accessories",
+      "is_active": true
+    },
+    {
+      "id": "cat-3",
+      "name": "Cases & Covers",
+      "description": "Protective cases and covers",
+      "is_active": true
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "shop-123",
+  "name": "Test Shop", 
+  "slug": "test-shop",
+  "description": "A demo e-commerce shop",
+  "primary_color": "#3B82F6",
+  "secondary_color": "#F9FAFB",
+  "created_at": "2024-01-01T00:00:00Z"
+}

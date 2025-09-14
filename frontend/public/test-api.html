@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="status">Testing...</div>
+    <div id="env">Environment variable test...</div>
+    
+    <script>
+        // Test environment variable access
+        const envDiv = document.getElementById('env');
+        envDiv.innerHTML = 'NEXT_PUBLIC_API_URL would be: ' + (typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_API_URL : 'Not available (normal in browser)');
+        
+        // Test the actual API call with hardcoded URL first
+        async function testAPI() {
+            const statusDiv = document.getElementById('status');
+            const apiUrl = 'http://localhost:8080'; // Hardcoded for testing
+            
+            try {
+                console.log('Making request to:', apiUrl + '/api/v1/health');
+                const response = await fetch(apiUrl + '/api/v1/health');
+                console.log('Response received:', response);
+                const data = await response.json();
+                console.log('Data parsed:', data);
+                statusDiv.innerHTML = `✅ SUCCESS: Backend is ${data.status} (Service: ${data.service})`;
+                statusDiv.style.color = 'green';
+            } catch (error) {
+                console.error('API test failed:', error);
+                statusDiv.innerHTML = `❌ FAILED: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>
