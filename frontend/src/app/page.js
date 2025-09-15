@@ -16,33 +16,62 @@ export default function HomePage() {
   const [cartCount, setCartCount] = useState(0)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [quickViewProduct, setQuickViewProduct] = useState(null)
+  const [galleryProduct, setGalleryProduct] = useState(null)
+  const [galleryImageIndex, setGalleryImageIndex] = useState(0)
 
   // Hero slider images
   const heroSlides = [
     {
       id: 1,
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Latest Electronics',
       subtitle: 'Discover cutting-edge technology at unbeatable prices',
       cta: 'Shop Now'
     },
     {
       id: 2,
-      image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80',
+      image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=1926&q=80',
       title: 'Premium Audio',
       subtitle: 'Immerse yourself in crystal-clear sound quality',
       cta: 'Explore Audio'
     },
     {
       id: 3,
-      image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Smart Home Solutions',
       subtitle: 'Transform your home with intelligent automation',
       cta: 'Browse Smart Home'
     }
   ]
+
+  // Category placeholder images
+  const getCategoryImage = (categoryName) => {
+    const categoryImages = {
+      'Smartphones': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'Laptops': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'Headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'Tablets': 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+    }
+    return categoryImages[categoryName] || 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+  }
+
+  // Product placeholder images
+  const getProductImage = (productName) => {
+    const productImages = {
+      'iPhone': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'Samsung': 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'MacBook': 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'Sony': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'AirPods': 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'iPad': 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+    }
+    for (const [key, image] of Object.entries(productImages)) {
+      if (productName.includes(key)) return image
+    }
+    return 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+  }
 
   useEffect(() => {
     loadShopData()
@@ -55,13 +84,11 @@ export default function HomePage() {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
     }, 5000)
     return () => clearInterval(timer)
-  }, [])
+  }, [heroSlides.length])
 
-  // Scroll detection for modern header effects
+  // Scroll detection for header
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
+    const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -70,19 +97,15 @@ export default function HomePage() {
     try {
       setLoading(true)
       setError('')
-
-      // Load shop settings, products, and categories in parallel
       const [shopResponse, productsResponse, categoriesResponse] = await Promise.all([
         storefrontService.getShop(),
         storefrontService.getProducts({ search: searchTerm, category_id: selectedCategory }),
         storefrontService.getCategories()
       ])
-
       setShop(shopResponse)
       setProducts(productsResponse.products || [])
       setFeaturedProducts((productsResponse.products || []).filter(p => p.is_featured))
       setCategories(categoriesResponse.categories || [])
-
     } catch (error) {
       console.error('Error loading shop data:', error)
       setError('Failed to load shop data. Please try again.')
@@ -96,7 +119,7 @@ export default function HomePage() {
     setCartCount(cart.reduce((sum, item) => sum + item.quantity, 0))
   }
 
-  const addToCart = (product) => {
+  const addToCart = (product, event) => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const existingItem = cart.find(item => item.id === product.id)
 
@@ -109,32 +132,33 @@ export default function HomePage() {
         price: product.price,
         price_display: product.price_display,
         quantity: 1,
-        image: product.images?.[0]?.url || ''
+        image: product.images?.[0]?.url || getProductImage(product.name)
       })
     }
 
     localStorage.setItem('cart', JSON.stringify(cart))
     updateCartCount()
+
+    // Show feedback
+    const button = event.target
+    const originalText = button.innerHTML
+    button.innerHTML = '<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Added!'
+    button.className = button.className.replace('bg-blue-600', 'bg-green-600').replace('hover:bg-blue-700', 'hover:bg-green-700')
+    setTimeout(() => {
+      button.innerHTML = originalText
+      button.className = button.className.replace('bg-green-600', 'bg-blue-600').replace('hover:bg-green-700', 'hover:bg-blue-700')
+    }, 1000)
   }
 
-  const getCategoryIcon = (categoryName) => {
-    const icons = {
-      'Smartphones': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      ),
-      'Laptops': (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      )
-    }
-    return icons[categoryName] || (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-      </svg>
-    )
+  const openQuickView = (product) => setQuickViewProduct(product)
+  const closeQuickView = () => setQuickViewProduct(null)
+  const openGallery = (product, imageIndex = 0) => {
+    setGalleryProduct(product)
+    setGalleryImageIndex(imageIndex)
+  }
+  const closeGallery = () => {
+    setGalleryProduct(null)
+    setGalleryImageIndex(0)
   }
 
   if (loading) {
@@ -153,10 +177,7 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="text-red-600 text-xl mb-4">{error}</div>
-          <button
-            onClick={loadShopData}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-          >
+          <button onClick={loadShopData} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
             Try Again
           </button>
         </div>
@@ -166,101 +187,40 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Modern Header */}
+      {/* Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100'
-          : 'bg-gradient-to-r from-white/90 to-white/80 backdrop-blur-sm'
+        scrolled ? 'bg-white shadow-lg' : 'bg-white/90 backdrop-blur-sm'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{shop?.shop_name?.[0] || 'E'}</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">{shop?.shop_name || 'EasyCart'}</span>
-              </Link>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              <Link href="/" className="text-gray-900 hover:text-blue-600 font-medium transition-colors">
-                Home
-              </Link>
-
-              {/* Categories Dropdown */}
-              <div className="relative group">
-                <button
-                  className="flex items-center space-x-1 text-gray-900 hover:text-blue-600 font-medium transition-colors"
-                  onMouseEnter={() => setIsCategoriesOpen(true)}
-                  onMouseLeave={() => setIsCategoriesOpen(false)}
-                >
-                  <span>Categories</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Mega Menu */}
-                {isCategoriesOpen && (
-                  <div
-                    className="absolute top-full left-1/2 transform -translate-x-1/2 w-96 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-6 mt-2"
-                    onMouseEnter={() => setIsCategoriesOpen(true)}
-                    onMouseLeave={() => setIsCategoriesOpen(false)}
-                  >
-                    <div className="grid grid-cols-2 gap-4">
-                      {categories.map((category) => (
-                        <button
-                          key={category.id}
-                          onClick={() => {
-                            setSelectedCategory(category.id)
-                            setIsCategoriesOpen(false)
-                          }}
-                          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
-                        >
-                          <div className="flex-shrink-0 text-blue-600">
-                            {getCategoryIcon(category.name)}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">{category.name}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">{shop?.shop_name?.[0] || 'E'}</span>
               </div>
+              <span className="text-xl font-bold text-gray-900">{shop?.shop_name || 'EasyCart'}</span>
+            </Link>
 
-              <Link href="/about" className="text-gray-900 hover:text-blue-600 font-medium transition-colors">
-                About Us
-              </Link>
-              <Link href="/contact" className="text-gray-900 hover:text-blue-600 font-medium transition-colors">
-                Contact
-              </Link>
+            <nav className="hidden md:flex items-center space-x-8">
+              <Link href="/" className="text-gray-700 hover:text-blue-600">Home</Link>
+              <Link href="/about" className="text-gray-700 hover:text-blue-600">About</Link>
+              <Link href="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
             </nav>
 
-            {/* Search and Cart */}
             <div className="flex items-center space-x-4">
-              {/* Search Bar */}
               <div className="hidden md:block relative">
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                  className="w-64 pl-10 pr-4 py-2 border rounded-full focus:ring-2 focus:ring-blue-500"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
 
-              {/* Cart */}
-              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors">
+              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-blue-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13v6a2 2 0 002 2h6a2 2 0 002-2v-6" />
                 </svg>
@@ -270,23 +230,13 @@ export default function HomePage() {
                   </span>
                 )}
               </Link>
-
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative h-screen overflow-hidden">
+      {/* Hero Slider - 60% viewport height */}
+      <section className="relative h-[60vh] min-h-[400px] overflow-hidden mt-16">
         {heroSlides.map((slide, index) => (
           <div
             key={slide.id}
@@ -294,23 +244,19 @@ export default function HomePage() {
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <div
-              className="w-full h-full bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30"></div>
-            </div>
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white max-w-4xl mx-auto px-4">
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                  {slide.title}
-                </h1>
-                <p className="text-xl md:text-2xl mb-8 opacity-90 max-w-2xl mx-auto">
-                  {slide.subtitle}
-                </p>
+                <h1 className="text-4xl md:text-6xl font-bold mb-4">{slide.title}</h1>
+                <p className="text-lg md:text-xl mb-6 opacity-90">{slide.subtitle}</p>
                 <button
-                  onClick={() => document.getElementById('products').scrollIntoView({ behavior: 'smooth' })}
-                  className="bg-white text-gray-900 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-100 transition-colors"
+                  onClick={() => document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })}
+                  className="bg-white text-gray-900 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100"
                 >
                   {slide.cta}
                 </button>
@@ -320,62 +266,144 @@ export default function HomePage() {
         ))}
 
         {/* Slide indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
           {heroSlides.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`w-3 h-3 rounded-full transition-all ${
-                index === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
+                index === currentSlide ? 'bg-white' : 'bg-white/50'
               }`}
             />
           ))}
         </div>
       </section>
 
+      {/* Categories Section - No header as requested */}
+      {categories.length > 0 && (
+        <section id="categories" className="py-12 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => {
+                    setSelectedCategory(category.id)
+                    document.getElementById('featured').scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="group relative aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                >
+                  <img
+                    src={category.image_url || getCategoryImage(category.name)}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="font-bold text-lg">{category.name}</h3>
+                    <p className="text-sm opacity-90">{category.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Featured Products */}
       {featuredProducts.length > 0 && (
-        <section className="py-20 bg-white">
+        <section id="featured" className="py-16 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Products</h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
                 Discover our handpicked selection of premium electronics
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {featuredProducts.slice(0, 4).map((product) => (
-                <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                  <div className="aspect-w-1 aspect-h-1 bg-gray-100">
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0].url}
-                        alt={product.name}
-                        className="w-full h-64 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">No image</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <div key={product.id} className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="relative aspect-square bg-gray-100">
+                    <img
+                      src={product.images?.[0]?.url || getProductImage(product.name)}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+
+                    {/* Hover overlay with action buttons */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <button
+                          onClick={() => openQuickView(product)}
+                          className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50"
+                          title="Quick View"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+
+                        <button
+                          onClick={() => openGallery(product)}
+                          className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50"
+                          title="View Gallery"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+
+                        <button
+                          onClick={(e) => addToCart(product, e)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg"
+                          title="Add to Cart"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13v6a2 2 0 002 2h6a2 2 0 002-2v-6" />
+                          </svg>
+                        </button>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Featured badge */}
+                    <div className="absolute top-3 left-3">
+                      <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                        Featured
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+
+                  <div className="p-5">
+                    <div className="mb-2">
+                      {product.category && (
+                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                          {product.category.name}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+
+                    {/* Pricing */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-2xl font-bold text-gray-900">{product.price_display}</span>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-xl font-bold text-gray-900">{product.price_display}</span>
                         {product.compare_price_display && (
-                          <span className="text-lg text-gray-500 line-through">{product.compare_price_display}</span>
+                          <span className="text-sm text-gray-500 line-through">{product.compare_price_display}</span>
                         )}
                       </div>
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        Add to Cart
-                      </button>
+
+                      {/* Star rating */}
+                      <div className="flex items-center space-x-1 text-yellow-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <svg key={star} className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        ))}
+                        <span className="text-gray-500 text-xs ml-1">(4.8)</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -385,19 +413,19 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* All Products */}
-      <section id="products" className="py-20 bg-gray-50">
+      {/* All Products Section */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">All Products</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">All Products</h2>
             {selectedCategory && (
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <span className="text-lg text-gray-600">
-                  Showing products in: {categories.find(cat => cat.id === selectedCategory)?.name}
+                <span className="text-gray-600">
+                  Filtered by: {categories.find(cat => cat.id === selectedCategory)?.name}
                 </span>
                 <button
                   onClick={() => setSelectedCategory('')}
-                  className="text-blue-600 hover:text-blue-700 underline"
+                  className="text-blue-600 hover:text-blue-700 underline text-sm"
                 >
                   Clear filter
                 </button>
@@ -405,38 +433,82 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <div className="aspect-w-1 aspect-h-1 bg-gray-100">
-                  {product.images?.[0] ? (
-                    <img
-                      src={product.images[0].url}
-                      alt={product.name}
-                      className="w-full h-64 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-400">No image</span>
+              <div key={product.id} className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="relative aspect-square bg-gray-100">
+                  <img
+                    src={product.images?.[0]?.url || getProductImage(product.name)}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+
+                  {/* Hover overlay with action buttons */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                    <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <button
+                        onClick={() => openQuickView(product)}
+                        className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50"
+                        title="Quick View"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={() => openGallery(product)}
+                        className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50"
+                        title="View Gallery"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={(e) => addToCart(product, e)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg"
+                        title="Add to Cart"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5M7 13v6a2 2 0 002 2h6a2 2 0 002-2v-6" />
+                        </svg>
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+
+                <div className="p-5">
+                  <div className="mb-2">
+                    {product.category && (
+                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                        {product.category.name}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+
+                  {/* Pricing */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-gray-900">{product.price_display}</span>
+                    <div className="flex items-baseline space-x-2">
+                      <span className="text-xl font-bold text-gray-900">{product.price_display}</span>
                       {product.compare_price_display && (
-                        <span className="text-lg text-gray-500 line-through">{product.compare_price_display}</span>
+                        <span className="text-sm text-gray-500 line-through">{product.compare_price_display}</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      Add to Cart
-                    </button>
+
+                    {/* Star rating */}
+                    <div className="flex items-center space-x-1 text-yellow-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg key={star} className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      ))}
+                      <span className="text-gray-500 text-xs ml-1">(4.8)</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -452,111 +524,60 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{shop?.shop_name?.[0] || 'E'}</span>
+      {/* Quick View Modal */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={closeQuickView}>
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+            <div className="bg-white rounded-xl max-w-4xl w-full mx-auto p-6 relative z-10" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
+                <button onClick={closeQuickView} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                  <img
+                    src={quickViewProduct.images?.[0]?.url || getProductImage(quickViewProduct.name)}
+                    alt={quickViewProduct.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <span className="text-xl font-bold">{shop?.shop_name || 'EasyCart'}</span>
-              </div>
-              <p className="text-gray-400 mb-6 max-w-md">
-                {shop?.description || 'Your trusted partner for quality electronics and exceptional service.'}
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <div className="space-y-2">
-                <Link href="/" className="text-gray-400 hover:text-white transition-colors block">Home</Link>
-                <Link href="/about" className="text-gray-400 hover:text-white transition-colors block">About</Link>
-                <Link href="/contact" className="text-gray-400 hover:text-white transition-colors block">Contact</Link>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Categories</h3>
-              <div className="space-y-2">
-                {categories.slice(0, 4).map((category) => (
+                <div className="space-y-4">
+                  <div className="text-2xl font-bold">{quickViewProduct.price_display}</div>
+                  <p className="text-gray-600">{quickViewProduct.description}</p>
                   <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(category.id)
-                      document.getElementById('products').scrollIntoView({ behavior: 'smooth' })
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors block text-left"
+                    onClick={(e) => addToCart(quickViewProduct, e)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold"
                   >
-                    {category.name}
+                    Add to Cart
                   </button>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 {shop?.shop_name || 'EasyCart'}. All rights reserved.</p>
           </div>
         </div>
-      </footer>
+      )}
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="fixed right-0 top-0 h-full w-64 bg-white shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b">
-              <span className="text-lg font-semibold">Menu</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Gallery Modal */}
+      {galleryProduct && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-90" onClick={closeGallery}>
+          <div className="flex items-center justify-center h-full p-4">
+            <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+              <button onClick={closeGallery} className="absolute top-4 right-4 text-white z-10">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <Link href="/" className="block text-gray-900 hover:text-blue-600 font-medium">Home</Link>
-              <div>
-                <button
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="flex items-center justify-between w-full text-gray-900 hover:text-blue-600 font-medium"
-                >
-                  <span>Categories</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isCategoriesOpen && (
-                  <div className="mt-2 ml-4 space-y-2">
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => {
-                          setSelectedCategory(category.id)
-                          setIsMobileMenuOpen(false)
-                        }}
-                        className="block text-gray-600 hover:text-blue-600 text-sm"
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Link href="/about" className="block text-gray-900 hover:text-blue-600 font-medium">About Us</Link>
-              <Link href="/contact" className="block text-gray-900 hover:text-blue-600 font-medium">Contact</Link>
-
-              {/* Mobile Search */}
-              <div className="pt-4 border-t">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              <img
+                src={galleryProduct.images?.[galleryImageIndex]?.url || getProductImage(galleryProduct.name)}
+                alt={galleryProduct.name}
+                className="w-full max-h-[80vh] object-contain rounded-lg"
+              />
             </div>
           </div>
         </div>
