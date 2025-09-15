@@ -28,32 +28,32 @@ class ApiService {
     return response.json()
   }
 
-  // Categories
+  // Admin Categories
   async getCategories() {
-    return this.request('/api/v1/categories')
+    return this.request('/api/v1/admin/categories')
   }
 
   async createCategory(categoryData) {
-    return this.request('/api/v1/categories', {
+    return this.request('/api/v1/admin/categories', {
       method: 'POST',
       body: JSON.stringify(categoryData)
     })
   }
 
   async updateCategory(id, categoryData) {
-    return this.request(`/api/v1/categories/${id}`, {
+    return this.request(`/api/v1/admin/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(categoryData)
     })
   }
 
   async deleteCategory(id) {
-    return this.request(`/api/v1/categories/${id}`, {
+    return this.request(`/api/v1/admin/categories/${id}`, {
       method: 'DELETE'
     })
   }
 
-  // Products
+  // Admin Products
   async getProducts(params = {}) {
     const searchParams = new URLSearchParams()
     Object.keys(params).forEach(key => {
@@ -61,34 +61,46 @@ class ApiService {
         searchParams.append(key, params[key])
       }
     })
-    
+
     const queryString = searchParams.toString()
-    const endpoint = `/api/v1/products${queryString ? `?${queryString}` : ''}`
-    
+    const endpoint = `/api/v1/admin/products${queryString ? `?${queryString}` : ''}`
+
     return this.request(endpoint)
   }
 
   async getProduct(id) {
-    return this.request(`/api/v1/products/${id}`)
+    return this.request(`/api/v1/admin/products/${id}`)
   }
 
   async createProduct(productData) {
-    return this.request('/api/v1/products', {
+    return this.request('/api/v1/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData)
     })
   }
 
   async updateProduct(id, productData) {
-    return this.request(`/api/v1/products/${id}`, {
+    return this.request(`/api/v1/admin/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(productData)
     })
   }
 
   async deleteProduct(id) {
-    return this.request(`/api/v1/products/${id}`, {
+    return this.request(`/api/v1/admin/products/${id}`, {
       method: 'DELETE'
+    })
+  }
+
+  // Admin Settings
+  async getSettings() {
+    return this.request('/api/v1/admin/settings')
+  }
+
+  async updateSettings(settingsData) {
+    return this.request('/api/v1/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settingsData)
     })
   }
 
@@ -100,7 +112,7 @@ class ApiService {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch(`${API_URL}/api/v1/uploads`, {
+    const response = await fetch(`${API_URL}/api/v1/admin/uploads`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`

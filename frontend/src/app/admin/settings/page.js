@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
+import APIService from '../../../lib/api'
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({
-    name: '',
+    shop_name: '',
     description: '',
     contact_email: '',
     contact_phone: '',
@@ -12,15 +13,12 @@ export default function AdminSettings() {
     state: '',
     zip_code: '',
     country: '',
-    currency: 'USD',
-    tax_rate: '',
-    shipping_rate: '',
-    theme_color: '#3B82F6',
+    primary_color: '#3B82F6',
+    secondary_color: '#64748B',
     meta_title: '',
     meta_description: '',
-    facebook_url: '',
-    instagram_url: '',
-    twitter_url: ''
+    enable_guest_checkout: true,
+    enable_registration: true
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -34,18 +32,24 @@ export default function AdminSettings() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/v1/admin/settings', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const data = await APIService.getSettings()
+      setSettings({
+        shop_name: data.shop_name || '',
+        description: data.description || '',
+        contact_email: data.contact_email || '',
+        contact_phone: data.contact_phone || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        zip_code: data.zip_code || '',
+        country: data.country || '',
+        primary_color: data.primary_color || '#3B82F6',
+        secondary_color: data.secondary_color || '#64748B',
+        meta_title: data.meta_title || '',
+        meta_description: data.meta_description || '',
+        enable_guest_checkout: data.enable_guest_checkout !== false,
+        enable_registration: data.enable_registration !== false
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to load settings')
-      }
-
-      const data = await response.json()
-      setSettings(data)
     } catch (err) {
       console.error('Failed to load settings:', err)
       setError('Failed to load settings')
@@ -61,24 +65,7 @@ export default function AdminSettings() {
     setSaving(true)
 
     try {
-      const response = await fetch('/api/v1/admin/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          ...settings,
-          tax_rate: settings.tax_rate ? parseFloat(settings.tax_rate) : 0,
-          shipping_rate: settings.shipping_rate ? parseInt(settings.shipping_rate * 100) : 0
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save settings')
-      }
-
+      await APIService.updateSettings(settings)
       setSuccess('Settings saved successfully!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -130,14 +117,14 @@ export default function AdminSettings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="shop_name" className="block text-sm font-medium text-gray-700">
                 Store Name
               </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={settings.name}
+                id="shop_name"
+                name="shop_name"
+                value={settings.shop_name}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
@@ -268,56 +255,31 @@ export default function AdminSettings() {
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-6">Business Settings</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
-                Currency
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="enable_guest_checkout"
+                  checked={settings.enable_guest_checkout}
+                  onChange={(e) => setSettings({...settings, enable_guest_checkout: e.target.checked})}
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+                <span className="ml-2 text-sm text-gray-700">Enable Guest Checkout</span>
               </label>
-              <select
-                id="currency"
-                name="currency"
-                value={settings.currency}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="CAD">CAD - Canadian Dollar</option>
-              </select>
             </div>
 
             <div>
-              <label htmlFor="tax_rate" className="block text-sm font-medium text-gray-700">
-                Tax Rate (%)
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="enable_registration"
+                  checked={settings.enable_registration}
+                  onChange={(e) => setSettings({...settings, enable_registration: e.target.checked})}
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+                <span className="ml-2 text-sm text-gray-700">Enable Customer Registration</span>
               </label>
-              <input
-                type="number"
-                id="tax_rate"
-                name="tax_rate"
-                min="0"
-                max="100"
-                step="0.01"
-                value={settings.tax_rate}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="shipping_rate" className="block text-sm font-medium text-gray-700">
-                Default Shipping Rate ($)
-              </label>
-              <input
-                type="number"
-                id="shipping_rate"
-                name="shipping_rate"
-                min="0"
-                step="0.01"
-                value={settings.shipping_rate}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
             </div>
           </div>
         </div>
@@ -326,18 +288,34 @@ export default function AdminSettings() {
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-6">Theme</h3>
 
-          <div>
-            <label htmlFor="theme_color" className="block text-sm font-medium text-gray-700">
-              Primary Color
-            </label>
-            <input
-              type="color"
-              id="theme_color"
-              name="theme_color"
-              value={settings.theme_color}
-              onChange={handleChange}
-              className="mt-1 h-10 w-20 border border-gray-300 rounded-md"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="primary_color" className="block text-sm font-medium text-gray-700">
+                Primary Color
+              </label>
+              <input
+                type="color"
+                id="primary_color"
+                name="primary_color"
+                value={settings.primary_color}
+                onChange={handleChange}
+                className="mt-1 h-10 w-20 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="secondary_color" className="block text-sm font-medium text-gray-700">
+                Secondary Color
+              </label>
+              <input
+                type="color"
+                id="secondary_color"
+                name="secondary_color"
+                value={settings.secondary_color}
+                onChange={handleChange}
+                className="mt-1 h-10 w-20 border border-gray-300 rounded-md"
+              />
+            </div>
           </div>
         </div>
 
@@ -376,54 +354,6 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Social Media */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6">Social Media</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label htmlFor="facebook_url" className="block text-sm font-medium text-gray-700">
-                Facebook URL
-              </label>
-              <input
-                type="url"
-                id="facebook_url"
-                name="facebook_url"
-                value={settings.facebook_url}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="instagram_url" className="block text-sm font-medium text-gray-700">
-                Instagram URL
-              </label>
-              <input
-                type="url"
-                id="instagram_url"
-                name="instagram_url"
-                value={settings.instagram_url}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="twitter_url" className="block text-sm font-medium text-gray-700">
-                Twitter URL
-              </label>
-              <input
-                type="url"
-                id="twitter_url"
-                name="twitter_url"
-                value={settings.twitter_url}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Submit */}
         <div className="flex justify-end">
