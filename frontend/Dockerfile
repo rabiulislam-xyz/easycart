@@ -1,5 +1,5 @@
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache gcompat
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev

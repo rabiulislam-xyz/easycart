@@ -9,7 +9,6 @@ import (
 
 type Category struct {
 	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
-	ShopID      uuid.UUID `json:"shop_id" gorm:"type:uuid;not null;index"`
 	Name        string    `json:"name" gorm:"not null"`
 	Slug        string    `json:"slug" gorm:"not null;index"`
 	Description string    `json:"description"`
@@ -18,7 +17,6 @@ type Category struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 
-	Shop     *Shop      `json:"shop,omitempty" gorm:"constraint:OnDelete:CASCADE"`
 	Products []*Product `json:"products,omitempty" gorm:"foreignKey:CategoryID"`
 }
 

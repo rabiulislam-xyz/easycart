@@ -43,11 +43,12 @@ func main() {
 	
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(database.DB, cfg.JWTSecret)
-	shopHandler := handlers.NewShopHandler(database.DB)
+	settingsHandler := handlers.NewSettingsHandler(database.DB)
 	productHandler := handlers.NewProductHandler(database.DB)
 	categoryHandler := handlers.NewCategoryHandler(database.DB)
 	uploadHandler := handlers.NewUploadHandler(minioService)
 	orderHandler := handlers.NewOrderHandler(database.DB)
+	adminHandler := handlers.NewAdminHandler(database.DB)
 	storefrontHandler := handlers.NewStorefrontHandler(database.DB)
 	
 	// Routes
@@ -56,50 +57,59 @@ func main() {
 	
 	// Auth routes
 	auth := api.Group("/auth")
-	auth.POST("/register", authHandler.Register)
 	auth.POST("/login", authHandler.Login)
-	
+	auth.POST("/register", authHandler.Register) // Customer registration
+
 	// Protected routes
 	protected := api.Group("")
 	protected.Use(middleware.JWTMiddleware(cfg.JWTSecret))
-	
+
 	// User routes
 	protected.GET("/profile", authHandler.GetProfile)
+
+	// Admin routes (require admin/manager role)
+	admin := api.Group("/admin")
+	admin.Use(middleware.JWTMiddleware(cfg.JWTSecret))
+	admin.Use(middleware.AdminMiddleware()) // New middleware for role checking
+
+	// Settings routes
+	admin.GET("/settings", settingsHandler.GetSettings)
+	admin.PUT("/settings", settingsHandler.UpdateSettings)
+
+	// User management (admin only)
+	admin.GET("/users", adminHandler.GetUsers)
+	admin.POST("/users", adminHandler.CreateUser)
+	admin.PUT("/users/:id", adminHandler.UpdateUser)
+	admin.DELETE("/users/:id", adminHandler.DeleteUser)
 	
-	// Shop routes
-	protected.GET("/shop", shopHandler.GetShop)
-	protected.POST("/shop", shopHandler.CreateShop)
-	protected.PUT("/shop", shopHandler.UpdateShop)
+	// Admin management routes (admin/manager access)
+	admin.POST("/uploads", uploadHandler.UploadFile)
+
+	// Category management
+	admin.GET("/categories", categoryHandler.GetCategories)
+	admin.GET("/categories/:id", categoryHandler.GetCategory)
+	admin.POST("/categories", categoryHandler.CreateCategory)
+	admin.PUT("/categories/:id", categoryHandler.UpdateCategory)
+	admin.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+	// Product management
+	admin.GET("/products", productHandler.GetProducts)
+	admin.GET("/products/:id", productHandler.GetProduct)
+	admin.POST("/products", productHandler.CreateProduct)
+	admin.PUT("/products/:id", productHandler.UpdateProduct)
+	admin.DELETE("/products/:id", productHandler.DeleteProduct)
+
+	// Order management
+	admin.GET("/orders", orderHandler.GetOrders)
+	admin.GET("/orders/:id", orderHandler.GetOrder)
+	admin.PUT("/orders/:id/status", orderHandler.UpdateOrderStatus)
 	
-	// Upload routes
-	protected.POST("/uploads", uploadHandler.UploadFile)
-	
-	// Category routes
-	protected.GET("/categories", categoryHandler.GetCategories)
-	protected.GET("/categories/:id", categoryHandler.GetCategory)
-	protected.POST("/categories", categoryHandler.CreateCategory)
-	protected.PUT("/categories/:id", categoryHandler.UpdateCategory)
-	protected.DELETE("/categories/:id", categoryHandler.DeleteCategory)
-	
-	// Product routes
-	protected.GET("/products", productHandler.GetProducts)
-	protected.GET("/products/:id", productHandler.GetProduct)
-	protected.POST("/products", productHandler.CreateProduct)
-	protected.PUT("/products/:id", productHandler.UpdateProduct)
-	protected.DELETE("/products/:id", productHandler.DeleteProduct)
-	
-	// Order routes (protected - for shop owners)
-	protected.GET("/orders", orderHandler.GetOrders)
-	protected.GET("/orders/:id", orderHandler.GetOrder)
-	protected.PUT("/orders/:id/status", orderHandler.UpdateOrderStatus)
-	
-	// Public storefront routes
-	storefront := api.Group("/store/:slug")
-	storefront.GET("", storefrontHandler.GetShop)
-	storefront.GET("/products", storefrontHandler.GetShopProducts)
-	storefront.GET("/products/:productId", storefrontHandler.GetShopProduct)
-	storefront.GET("/categories", storefrontHandler.GetShopCategories)
-	storefront.POST("/orders", storefrontHandler.CreatePublicOrder)
+	// Public storefront routes (single shop)
+	api.GET("/store", storefrontHandler.GetShop)
+	api.GET("/store/products", storefrontHandler.GetShopProducts)
+	api.GET("/store/products/:productId", storefrontHandler.GetShopProduct)
+	api.GET("/store/categories", storefrontHandler.GetShopCategories)
+	api.POST("/store/orders", storefrontHandler.CreatePublicOrder)
 	
 	log.Printf("Starting server on port %s", cfg.Port)
 	if err := e.Start(":" + cfg.Port); err != nil {

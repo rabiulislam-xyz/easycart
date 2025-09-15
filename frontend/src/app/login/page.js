@@ -20,8 +20,15 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await authService.login(formData)
-      router.push('/dashboard')
+      const response = await authService.login(formData)
+      const user = response.user
+
+      // Redirect based on user role
+      if (user.role === 'admin' || user.role === 'manager') {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
     } catch (error) {
       setError(error.message)
     } finally {

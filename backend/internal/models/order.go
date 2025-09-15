@@ -28,36 +28,53 @@ const (
 
 type Order struct {
 	ID              uuid.UUID     `json:"id" gorm:"type:uuid;primary_key"`
-	ShopID          uuid.UUID     `json:"shop_id" gorm:"type:uuid;not null;index"`
 	OrderNumber     string        `json:"order_number" gorm:"unique;not null"`
+
+	// Customer Information (enhanced for guest checkout)
+	CustomerID      *uuid.UUID    `json:"customer_id,omitempty" gorm:"type:uuid;index"` // null for guest orders
 	CustomerEmail   string        `json:"customer_email" gorm:"not null"`
 	CustomerName    string        `json:"customer_name" gorm:"not null"`
-	CustomerPhone   string        `json:"customer_phone"`
-	
-	// Shipping Address
-	ShippingAddress string `json:"shipping_address" gorm:"not null"`
-	ShippingCity    string `json:"shipping_city" gorm:"not null"`
-	ShippingState   string `json:"shipping_state"`
-	ShippingZip     string `json:"shipping_zip" gorm:"not null"`
-	ShippingCountry string `json:"shipping_country" gorm:"not null;default:'US'"`
-	
+	CustomerPhone   string        `json:"customer_phone" gorm:"not null"`
+	IsGuestOrder    bool          `json:"is_guest_order" gorm:"default:false"`
+
+	// Shipping Address (enhanced)
+	ShippingFirstName string `json:"shipping_first_name"`
+	ShippingLastName  string `json:"shipping_last_name"`
+	ShippingAddress   string `json:"shipping_address" gorm:"not null"`
+	ShippingAddress2  string `json:"shipping_address2"`
+	ShippingCity      string `json:"shipping_city" gorm:"not null"`
+	ShippingState     string `json:"shipping_state"`
+	ShippingZip       string `json:"shipping_zip" gorm:"not null"`
+	ShippingCountry   string `json:"shipping_country" gorm:"not null;default:'US'"`
+
+	// Billing Address (can be same as shipping)
+	BillingFirstName string `json:"billing_first_name"`
+	BillingLastName  string `json:"billing_last_name"`
+	BillingAddress   string `json:"billing_address"`
+	BillingAddress2  string `json:"billing_address2"`
+	BillingCity      string `json:"billing_city"`
+	BillingState     string `json:"billing_state"`
+	BillingZip       string `json:"billing_zip"`
+	BillingCountry   string `json:"billing_country"`
+	SameAsBilling    bool   `json:"same_as_billing" gorm:"default:true"`
+
 	// Order totals (in cents)
 	Subtotal      int `json:"subtotal" gorm:"not null"`
 	TaxAmount     int `json:"tax_amount" gorm:"default:0"`
 	ShippingCost  int `json:"shipping_cost" gorm:"default:0"`
 	Total         int `json:"total" gorm:"not null"`
-	
+
 	// Status
 	Status        OrderStatus   `json:"status" gorm:"type:varchar(20);default:'pending'"`
 	PaymentStatus PaymentStatus `json:"payment_status" gorm:"type:varchar(20);default:'pending'"`
-	
+
 	// Metadata
 	Notes     string    `json:"notes"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	
+
 	// Relations
-	Shop      Shop        `json:"shop,omitempty" gorm:"foreignKey:ShopID"`
+	Customer  *User       `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
 	Items     []OrderItem `json:"items,omitempty" gorm:"foreignKey:OrderID"`
 }
 

@@ -33,18 +33,10 @@ func NewCategoryHandler(db *gorm.DB) *CategoryHandler {
 }
 
 func (h *CategoryHandler) GetCategories(c echo.Context) error {
-	userID := c.Get("user_id").(uuid.UUID)
-
 	db := h.db
 
-	// Get user's shop
-	var shop models.Shop
-	if err := db.Where("user_id = ?", userID).First(&shop).Error; err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "shop not found")
-	}
-
 	var categories []models.Category
-	if err := db.Where("shop_id = ?", shop.ID).Order("name ASC").Find(&categories).Error; err != nil {
+	if err := db.Order("name ASC").Find(&categories).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch categories")
 	}
 
@@ -54,7 +46,6 @@ func (h *CategoryHandler) GetCategories(c echo.Context) error {
 }
 
 func (h *CategoryHandler) GetCategory(c echo.Context) error {
-	userID := c.Get("user_id").(uuid.UUID)
 	categoryID := c.Param("id")
 
 	categoryUUID, err := uuid.Parse(categoryID)
@@ -64,14 +55,8 @@ func (h *CategoryHandler) GetCategory(c echo.Context) error {
 
 	db := h.db
 
-	// Get user's shop
-	var shop models.Shop
-	if err := db.Where("user_id = ?", userID).First(&shop).Error; err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "shop not found")
-	}
-
 	var category models.Category
-	if err := db.Where("id = ? AND shop_id = ?", categoryUUID, shop.ID).First(&category).Error; err != nil {
+	if err := db.Where("id = ?", categoryUUID).First(&category).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "category not found")
 		}
@@ -82,8 +67,6 @@ func (h *CategoryHandler) GetCategory(c echo.Context) error {
 }
 
 func (h *CategoryHandler) CreateCategory(c echo.Context) error {
-	userID := c.Get("user_id").(uuid.UUID)
-
 	req := new(CreateCategoryRequest)
 	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -95,12 +78,6 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 
 	db := h.db
 
-	// Get user's shop
-	var shop models.Shop
-	if err := db.Where("user_id = ?", userID).First(&shop).Error; err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "shop not found")
-	}
-
 	// Generate slug
 	slug := h.generateSlug(req.Name)
 
@@ -109,7 +86,7 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	counter := 1
 	for {
 		var existingCategory models.Category
-		if err := db.Where("slug = ? AND shop_id = ?", slug, shop.ID).First(&existingCategory).Error; err != nil {
+		if err := db.Where("slug = ?", slug).First(&existingCategory).Error; err != nil {
 			break // slug is available
 		}
 		slug = originalSlug + "-" + string(rune(counter))
@@ -120,13 +97,12 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	var imageURL string
 	if req.ImageID != nil {
 		var media models.Media
-		if err := db.Where("id = ? AND shop_id = ?", *req.ImageID, shop.ID).First(&media).Error; err == nil {
+		if err := db.Where("id = ?", *req.ImageID).First(&media).Error; err == nil {
 			imageURL = media.URL
 		}
 	}
 
 	category := models.Category{
-		ShopID:      shop.ID,
 		Name:        req.Name,
 		Slug:        slug,
 		Description: req.Description,
@@ -142,7 +118,6 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 }
 
 func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
-	userID := c.Get("user_id").(uuid.UUID)
 	categoryID := c.Param("id")
 
 	categoryUUID, err := uuid.Parse(categoryID)
@@ -157,15 +132,9 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 
 	db := h.db
 
-	// Get user's shop
-	var shop models.Shop
-	if err := db.Where("user_id = ?", userID).First(&shop).Error; err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "shop not found")
-	}
-
 	// Get existing category
 	var category models.Category
-	if err := db.Where("id = ? AND shop_id = ?", categoryUUID, shop.ID).First(&category).Error; err != nil {
+	if err := db.Where("id = ?", categoryUUID).First(&category).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "category not found")
 		}
@@ -182,7 +151,7 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 		counter := 1
 		for {
 			var existingCategory models.Category
-			if err := db.Where("slug = ? AND shop_id = ? AND id != ?", category.Slug, shop.ID, category.ID).First(&existingCategory).Error; err != nil {
+			if err := db.Where("slug = ? AND id != ?", category.Slug, category.ID).First(&existingCategory).Error; err != nil {
 				break // slug is available
 			}
 			category.Slug = originalSlug + "-" + string(rune(counter))
@@ -197,7 +166,7 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 	if req.ImageID != nil {
 		// Get image URL
 		var media models.Media
-		if err := db.Where("id = ? AND shop_id = ?", *req.ImageID, shop.ID).First(&media).Error; err == nil {
+		if err := db.Where("id = ?", *req.ImageID).First(&media).Error; err == nil {
 			category.ImageURL = media.URL
 		}
 	}
@@ -214,7 +183,6 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 }
 
 func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
-	userID := c.Get("user_id").(uuid.UUID)
 	categoryID := c.Param("id")
 
 	categoryUUID, err := uuid.Parse(categoryID)
@@ -224,12 +192,6 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 
 	db := h.db
 
-	// Get user's shop
-	var shop models.Shop
-	if err := db.Where("user_id = ?", userID).First(&shop).Error; err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "shop not found")
-	}
-
 	// Check if category has products
 	var productCount int64
 	db.Model(&models.Product{}).Where("category_id = ?", categoryUUID).Count(&productCount)
@@ -238,7 +200,7 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	}
 
 	// Delete category
-	result := db.Where("id = ? AND shop_id = ?", categoryUUID, shop.ID).Delete(&models.Category{})
+	result := db.Where("id = ?", categoryUUID).Delete(&models.Category{})
 	if result.Error != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete category")
 	}

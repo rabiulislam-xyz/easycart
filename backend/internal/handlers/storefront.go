@@ -19,34 +19,18 @@ func NewStorefrontHandler(db *gorm.DB) *StorefrontHandler {
 	return &StorefrontHandler{db: db}
 }
 
-// GetShop gets a shop by slug (public endpoint)
+// GetShop gets the shop settings (public endpoint)
 func (h *StorefrontHandler) GetShop(c echo.Context) error {
-	slug := c.Param("slug")
-
-	var shop models.Shop
-	if err := h.db.Where("slug = ?", slug).First(&shop).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Shop not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
+	settings, err := models.GetSettings(h.db)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get shop settings"})
 	}
 
-	return c.JSON(http.StatusOK, shop)
+	return c.JSON(http.StatusOK, settings)
 }
 
-// GetShopProducts gets products for a shop (public endpoint)
+// GetShopProducts gets all products (public endpoint)
 func (h *StorefrontHandler) GetShopProducts(c echo.Context) error {
-	slug := c.Param("slug")
-
-	// Get shop first
-	var shop models.Shop
-	if err := h.db.Where("slug = ?", slug).First(&shop).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Shop not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
-	}
-
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	if page < 1 {
 		page = 1
@@ -59,7 +43,7 @@ func (h *StorefrontHandler) GetShopProducts(c echo.Context) error {
 	search := c.QueryParam("search")
 	categoryID := c.QueryParam("category_id")
 
-	query := h.db.Where("shop_id = ? AND is_active = true", shop.ID)
+	query := h.db.Where("is_active = true")
 
 	if search != "" {
 		query = query.Where("name ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")
@@ -96,19 +80,9 @@ func (h *StorefrontHandler) GetShopProducts(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// GetShopProduct gets a single product for a shop (public endpoint)
+// GetShopProduct gets a single product (public endpoint)
 func (h *StorefrontHandler) GetShopProduct(c echo.Context) error {
-	slug := c.Param("slug")
 	productID := c.Param("productId")
-
-	// Get shop first
-	var shop models.Shop
-	if err := h.db.Where("slug = ?", slug).First(&shop).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Shop not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
-	}
 
 	// Parse product ID
 	id, err := uuid.Parse(productID)
@@ -117,7 +91,7 @@ func (h *StorefrontHandler) GetShopProduct(c echo.Context) error {
 	}
 
 	var product models.Product
-	if err := h.db.Preload("Category").Preload("Images").Where("id = ? AND shop_id = ? AND is_active = true", id, shop.ID).First(&product).Error; err != nil {
+	if err := h.db.Preload("Category").Preload("Images").Where("id = ? AND is_active = true", id).First(&product).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "Product not found"})
 		}
@@ -129,19 +103,8 @@ func (h *StorefrontHandler) GetShopProduct(c echo.Context) error {
 
 // GetShopCategories gets categories for a shop (public endpoint)
 func (h *StorefrontHandler) GetShopCategories(c echo.Context) error {
-	slug := c.Param("slug")
-
-	// Get shop first
-	var shop models.Shop
-	if err := h.db.Where("slug = ?", slug).First(&shop).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Shop not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
-	}
-
 	var categories []models.Category
-	if err := h.db.Where("shop_id = ?", shop.ID).Order("name ASC").Find(&categories).Error; err != nil {
+	if err := h.db.Order("name ASC").Find(&categories).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
 	}
 
@@ -154,16 +117,6 @@ func (h *StorefrontHandler) GetShopCategories(c echo.Context) error {
 
 // CreatePublicOrder creates an order from the storefront (public endpoint)
 func (h *StorefrontHandler) CreatePublicOrder(c echo.Context) error {
-	slug := c.Param("slug")
-
-	// Get shop first
-	var shop models.Shop
-	if err := h.db.Where("slug = ?", slug).First(&shop).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Shop not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
-	}
 
 	var req struct {
 		CustomerEmail   string `json:"customer_email" validate:"required,email"`
@@ -199,7 +152,6 @@ func (h *StorefrontHandler) CreatePublicOrder(c echo.Context) error {
 
 	// Create order
 	order := models.Order{
-		ShopID:          shop.ID,
 		CustomerEmail:   req.CustomerEmail,
 		CustomerName:    req.CustomerName,
 		CustomerPhone:   req.CustomerPhone,
@@ -224,7 +176,7 @@ func (h *StorefrontHandler) CreatePublicOrder(c echo.Context) error {
 	for _, item := range req.Items {
 		// Get product
 		var product models.Product
-		if err := tx.Where("id = ? AND shop_id = ? AND is_active = true", item.ProductID, shop.ID).First(&product).Error; err != nil {
+		if err := tx.Where("id = ? AND is_active = true", item.ProductID).First(&product).Error; err != nil {
 			tx.Rollback()
 			if err == gorm.ErrRecordNotFound {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "Product not found or inactive"})

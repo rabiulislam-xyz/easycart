@@ -28,7 +28,7 @@ func Connect(cfg *config.Config) error {
 	// Auto-migrate models
 	err = db.AutoMigrate(
 		&models.User{},
-		&models.Shop{},
+		&models.Settings{},
 		&models.Category{},
 		&models.Product{},
 		&models.Media{},

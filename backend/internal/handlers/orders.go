@@ -61,7 +61,6 @@ func (h *OrderHandler) CreateOrder(c echo.Context) error {
 
 	// Create order
 	order := models.Order{
-		ShopID:          shopID,
 		CustomerEmail:   req.CustomerEmail,
 		CustomerName:    req.CustomerName,
 		CustomerPhone:   req.CustomerPhone,

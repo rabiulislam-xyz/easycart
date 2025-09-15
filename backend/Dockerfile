@@ -9,8 +9,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the applications
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o admin ./cmd/admin
 
 # Final stage
 FROM alpine:latest
@@ -20,8 +21,9 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-# Copy binary from builder stage
+# Copy binaries from builder stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/admin .
 
 EXPOSE 8080
 

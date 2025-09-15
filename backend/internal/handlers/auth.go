@@ -57,11 +57,13 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "user with this email already exists")
 	}
 
-	// Create new user
+	// Create new user with customer role
 	user := models.User{
 		Email:     strings.ToLower(req.Email),
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
+		Role:      models.UserRoleCustomer,
+		IsActive:  true,
 	}
 
 	if err := user.HashPassword(req.Password); err != nil {
@@ -105,8 +107,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
 
-	// Load shop if exists
-	db.Preload("Shop").First(&user, user.ID)
+	// Reload user to get complete data
+	db.First(&user, user.ID)
 
 	// Generate JWT token
 	token, err := h.generateToken(user.ID, user.Email)
@@ -126,7 +128,7 @@ func (h *AuthHandler) GetProfile(c echo.Context) error {
 	db := h.db
 	var user models.User
 	
-	if err := db.Preload("Shop").First(&user, userID).Error; err != nil {
+	if err := db.First(&user, userID).Error; err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 

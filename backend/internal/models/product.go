@@ -9,31 +9,30 @@ import (
 )
 
 type Product struct {
-	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key"`
-	ShopID      uuid.UUID `json:"shop_id" gorm:"type:uuid;not null;index"`
+	ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key"`
 	CategoryID  *uuid.UUID `json:"category_id,omitempty" gorm:"type:uuid;index"`
-	Name        string    `json:"name" gorm:"not null"`
-	Slug        string    `json:"slug" gorm:"not null;index"`
-	Description string    `json:"description"`
-	SKU         string    `json:"sku" gorm:"uniqueIndex;not null"`
-	Price       int       `json:"price" gorm:"not null"` // Price in cents
-	ComparePrice *int     `json:"compare_price,omitempty"` // Original price in cents
-	Stock       int       `json:"stock" gorm:"default:0"`
-	MinStock    int       `json:"min_stock" gorm:"default:0"`
-	Weight      *float64  `json:"weight,omitempty"` // Weight in grams
-	IsActive    bool      `json:"is_active" gorm:"default:true"`
-	IsFeatured  bool      `json:"is_featured" gorm:"default:false"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Name        string     `json:"name" gorm:"not null"`
+	Slug        string     `json:"slug" gorm:"not null;index"`
+	Description string     `json:"description"`
+	SKU         string     `json:"sku" gorm:"uniqueIndex;not null"`
+	Price       int        `json:"price" gorm:"not null"` // Price in cents
+	ComparePrice *int      `json:"compare_price,omitempty"` // Original price in cents
+	Stock       int        `json:"stock" gorm:"default:0"`
+	MinStock    int        `json:"min_stock" gorm:"default:0"`
+	Weight      *float64   `json:"weight,omitempty"` // Weight in grams
+	IsActive    bool       `json:"is_active" gorm:"default:true"`
+	IsFeatured  bool       `json:"is_featured" gorm:"default:false"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 
-	Shop     *Shop     `json:"shop,omitempty" gorm:"constraint:OnDelete:CASCADE"`
-	Category *Category `json:"category,omitempty" gorm:"constraint:OnDelete:SET NULL"`
-	Images   []*Media  `json:"images,omitempty" gorm:"foreignKey:ProductID"`
+	Category *Category        `json:"category,omitempty" gorm:"constraint:OnDelete:SET NULL"`
+	Images   []*Media         `json:"images,omitempty" gorm:"foreignKey:ProductID"`
+	Options  []ProductOption  `json:"options,omitempty" gorm:"foreignKey:ProductID"`
+	Variants []ProductVariant `json:"variants,omitempty" gorm:"foreignKey:ProductID"`
 }
 
 type ProductResponse struct {
 	ID           uuid.UUID  `json:"id"`
-	ShopID       uuid.UUID  `json:"shop_id"`
 	CategoryID   *uuid.UUID `json:"category_id,omitempty"`
 	Name         string     `json:"name"`
 	Slug         string     `json:"slug"`
@@ -48,10 +47,12 @@ type ProductResponse struct {
 	Weight       *float64   `json:"weight,omitempty"`
 	IsActive     bool       `json:"is_active"`
 	IsFeatured   bool       `json:"is_featured"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	Category     *Category  `json:"category,omitempty"`
-	Images       []*Media   `json:"images,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	Category     *Category              `json:"category,omitempty"`
+	Images       []*Media               `json:"images,omitempty"`
+	Options      []ProductOptionResponse  `json:"options,omitempty"`
+	Variants     []ProductVariantResponse `json:"variants,omitempty"`
 }
 
 func (p *Product) BeforeCreate(tx *gorm.DB) error {
@@ -64,7 +65,6 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 func (p *Product) ToResponse() ProductResponse {
 	response := ProductResponse{
 		ID:          p.ID,
-		ShopID:      p.ShopID,
 		CategoryID:  p.CategoryID,
 		Name:        p.Name,
 		Slug:        p.Slug,
@@ -87,6 +87,22 @@ func (p *Product) ToResponse() ProductResponse {
 		response.ComparePrice = p.ComparePrice
 		comparePriceDisplay := formatPrice(*p.ComparePrice)
 		response.ComparePriceDisplay = &comparePriceDisplay
+	}
+
+	// Convert options
+	if len(p.Options) > 0 {
+		response.Options = make([]ProductOptionResponse, len(p.Options))
+		for i, option := range p.Options {
+			response.Options[i] = option.ToResponse()
+		}
+	}
+
+	// Convert variants
+	if len(p.Variants) > 0 {
+		response.Variants = make([]ProductVariantResponse, len(p.Variants))
+		for i, variant := range p.Variants {
+			response.Variants[i] = variant.ToResponse()
+		}
 	}
 
 	return response

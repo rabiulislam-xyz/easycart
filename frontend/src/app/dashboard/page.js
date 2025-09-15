@@ -119,7 +119,7 @@ export default function DashboardPage() {
                 Create Your Shop
               </h2>
               <p className="text-gray-600 mb-6">
-                Let's set up your online store. You can customize it later.
+                Let&apos;s set up your online store. You can customize it later.
               </p>
               
               <form onSubmit={handleShopSubmit} className="space-y-4">

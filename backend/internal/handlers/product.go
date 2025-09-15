@@ -194,7 +194,6 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 
 	// Create product
 	product := models.Product{
-		ShopID:      shop.ID,
 		CategoryID:  req.CategoryID,
 		Name:        req.Name,
 		Slug:        h.generateSlug(req.Name),

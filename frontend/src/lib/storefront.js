@@ -20,39 +20,39 @@ class StorefrontService {
     return response.json()
   }
 
-  // Get shop by slug
-  async getShop(slug) {
-    return this.request(`/api/v1/store/${slug}`)
+  // Get shop settings (single shop)
+  async getShop() {
+    return this.request(`/api/v1/store`)
   }
 
-  // Get products for a shop
-  async getProducts(slug, params = {}) {
+  // Get products (single shop)
+  async getProducts(params = {}) {
     const searchParams = new URLSearchParams()
     Object.keys(params).forEach(key => {
       if (params[key] !== undefined && params[key] !== '') {
         searchParams.append(key, params[key])
       }
     })
-    
+
     const queryString = searchParams.toString()
-    const endpoint = `/api/v1/store/${slug}/products${queryString ? `?${queryString}` : ''}`
-    
+    const endpoint = `/api/v1/store/products${queryString ? `?${queryString}` : ''}`
+
     return this.request(endpoint)
   }
 
   // Get single product
-  async getProduct(slug, productId) {
-    return this.request(`/api/v1/store/${slug}/products/${productId}`)
+  async getProduct(productId) {
+    return this.request(`/api/v1/store/products/${productId}`)
   }
 
-  // Get categories for a shop
-  async getCategories(slug) {
-    return this.request(`/api/v1/store/${slug}/categories`)
+  // Get categories (single shop)
+  async getCategories() {
+    return this.request(`/api/v1/store/categories`)
   }
 
   // Create order (checkout)
-  async createOrder(slug, orderData) {
-    return this.request(`/api/v1/store/${slug}/orders`, {
+  async createOrder(orderData) {
+    return this.request(`/api/v1/store/orders`, {
       method: 'POST',
       body: JSON.stringify(orderData)
     })
